@@ -2,6 +2,12 @@
 
 namespace TwentySixB\WP\Plugin\PostVersion;
 
+use TwentySixB\WP\Plugin\PostVersion\Hooks\Admin;
+use TwentySixB\WP\Plugin\PostVersion\Hooks\Query;
+use TwentySixB\WP\Plugin\PostVersion\Hooks\Revision;
+use TwentySixB\WP\Plugin\PostVersion\Hooks\Status;
+use TwentySixB\WP\Plugin\PostVersion\Hooks\Version;
+
 /**
  * The core plugin class.
  *
@@ -55,7 +61,7 @@ class Plugin {
 	 */
 	public function run() {
 		$this->set_locale();
-		$this->define_admin_hooks();
+		$this->define_plugin_hooks();
 		$this->define_frontend_hooks();
 	}
 
@@ -96,16 +102,18 @@ class Plugin {
 	}
 
 	/**
-	 * Register all of the hooks related to the dashboard functionality
-	 * of the plugin.
+	 * Register all of the hooks related to the general functionality of the plugin.
 	 *
 	 * @since  0.0.0
 	 * @access private
 	 */
-	private function define_admin_hooks() {
-
+	private function define_plugin_hooks() {
 		$components = [
-			'admin' => new Admin( $this ),
+			'admin'    => new Admin( $this ),
+			'version'  => new Version( $this ),
+			'revision' => new Revision( $this ),
+			'status'   => new Status( $this ),
+			'query'    => new Query( $this ),
 		];
 
 		foreach ( $components as $component ) {
