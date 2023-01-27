@@ -9,6 +9,8 @@ class Version {
 	private string $label;
 
 	public static function get( int $post_id ) : ?Version {
+		// TODO: should we check to see if the post is versioned?
+
 		$post_meta = get_post_meta( $post_id );
 
 		$version = null;

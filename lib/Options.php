@@ -21,7 +21,7 @@ class Options {
 	];
 
 	/**
-	 * Returns the Post Version options.
+	 * Returns Post Version's options.
 	 *
 	 * @since 0.0.0
 	 *
@@ -46,6 +46,14 @@ class Options {
 		return self::DEFAULT;
 	}
 
+	/**
+	 * Returns whether a post type is versioned.
+	 *
+	 * @since 0.0.0
+	 *
+	 * @param string $post_type
+	 * @return bool
+	 */
 	public static function is_post_type_versioned( string $post_type ) : bool {
 		$options = self::get();
 		return in_array( $post_type, $options['post_types'], true );
