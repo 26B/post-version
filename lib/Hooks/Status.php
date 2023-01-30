@@ -106,10 +106,8 @@ class Status {
 		 * @param array   $postarr
 		 * @param array   $unsanitized_postarr
 		 * @param bool    $update
-		 *
-		 * @return void
 		 */
-		$prevent_change = add_filter( 'post_version_prevent_unreleased_change', true, $post, $data, $postarr, $unsanitized_postarr, $update );
+		$prevent_change = apply_filters( 'post_version_prevent_unreleased_change', true, $post, $data, $postarr, $unsanitized_postarr, $update );
 		if ( ! $prevent_change ) {
 			return $data;
 		}

@@ -146,14 +146,31 @@ class Admin {
 		// Get post version.
 		$version = Version::get( $post->ID );
 
+		// If there's not a version, add warning.
+		if ( $version === null ) {
+			// TODO: Add warning css.
+			$html = sprintf(
+				"<?xml encoding='utf-8' ?>
+				<div id='post-version-version'>
+					<b>%s</b>
+				</div>",
+				__( 'Does not have a version yet. Save post to set version 1.' )
+			);
+			$this->add_html_to_dom( $dom, 'major-publishing-actions', $html, 'post-version-version' );
+
+			// Output html.
+			echo $dom->saveHTML();
+			return;
+		}
+
 		// Add version info html to the box.
 		$html = sprintf(
 			"<?xml encoding='utf-8' ?>
 			<div id='post-version-version'>
 				<b>%s</b>
 			</div>",
-			// TODO: translators note
-			sprintf( __( 'Version: %s (%s)' ), $version->label(), $version->version() )
+			/* translators: 1: Version label, 2: Version number */
+			sprintf( __( 'Version: %1$s (%2$s)' ), $version->label(), $version->version() )
 		);
 		$this->add_html_to_dom( $dom, 'major-publishing-actions', $html, 'post-version-version' );
 

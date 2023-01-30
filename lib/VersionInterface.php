@@ -2,6 +2,7 @@
 
 namespace TwentySixB\WP\Plugin\PostVersion;
 
+use TwentySixB\WP\Plugin\PostVersion\Hooks\Revision;
 use TwentySixB\WP\Plugin\PostVersion\Hooks\Status;
 use TwentySixB\WP\Plugin\PostVersion\Version;
 use WP_Post;
@@ -62,7 +63,6 @@ class VersionInterface {
 		}
 
 		// Get the current version. If none exist, then do not proceed.
-		// TODO: How to handle versioning pre-existing content?
 		$current_version = Version::get( $post_id );
 		if ( ! $current_version instanceof Version ) {
 			return false;
@@ -70,7 +70,52 @@ class VersionInterface {
 
 		// Make new version information.
 		$new_version_number = $current_version->version() + 1;
+
+		/**
+		 * Filters the new label for a versioned post.
+		 *
+		 * @since 0.0.0
+		 *
+		 * @param int     $new_version_number
+		 * @param int     $post_id
+		 * @param Version $current_version
+		 */
 		$new_version_label  = apply_filters( 'post_version_new_version_label', $new_version_number, $post_id, $current_version );
+
+		// Create new revision (copy of the current post) and publish it.
+
+		// Stop duplication of meta's on revisions.
+		add_filter( 'post_version_duplicate_meta_terms', '__return_false' );
+
+		$latest_revision = null;
+
+		add_filter( 'wp_save_post_revision_check_for_changes', '__return_false' );
+		$latest_revision_id = wp_save_post_revision( $post_id );
+		remove_filter( 'wp_save_post_revision_check_for_changes', '__return_false' );
+
+		if ( is_int( $latest_revision_id ) && $latest_revision_id > 0 ) {
+			Revision::copy_meta_terms_to_latest_revision( $post_id, $post );
+			$latest_revision = wp_get_post_revision( $latest_revision_id );
+		}
+
+		if ( ! $latest_revision ) {
+			// TODO: Failure state.
+			remove_filter( 'post_version_duplicate_meta_terms', '__return_false' );
+			return false;
+		}
+
+		// Publish revision.
+		remove_action( 'pre_post_update', 'wp_save_post_revision' );
+		$status = wp_update_post( [ 'ID' => $latest_revision->ID, 'post_status' => 'publish' ], true );
+		add_action( 'pre_post_update', 'wp_save_post_revision' );
+
+		if ( is_wp_error( $status ) ) {
+			// TODO: Failure state.
+			remove_filter( 'post_version_duplicate_meta_terms', '__return_false' );
+			return false;
+		}
+
+		// Increase version for the current post and set it to unreleased.
 
 		// Delete old post version.
 		delete_post_meta( $post_id, sprintf( 'post_version_%s', $current_version->version() ), $current_version->label() );
@@ -78,40 +123,17 @@ class VersionInterface {
 		// Add new post version.
 		add_post_meta( $post_id, sprintf( 'post_version_%s', $new_version_number ), $new_version_label, true );
 
-		// Stop duplication of meta's on revisions.
-		add_filter( 'post_version_duplicate_meta_terms', '__return_false' );
-
 		// Update the post status of the real post to unreleased status.
 		remove_action( 'pre_post_update', 'wp_save_post_revision' );
 		$status = wp_update_post( [ 'ID' => $post_id, 'post_status' => Status::UNRELEASED ], true );
 		add_action( 'pre_post_update', 'wp_save_post_revision' );
-		if ( is_wp_error( $status ) ) {
-			// TODO:
-			return false;
-		}
-
-		// Get the latest post revision and set its status to published.
-		$post_revisions = wp_get_post_revisions( $post_id );
-
-		/**
-		 * TODO: if the latest revision is a versioned revision, or there are no revisions, we need
-		 * to throw an error or create a new revision before the post meta is updated above.
-		 */
-		if ( ! empty( $post_revisions ) ) {
-			$latest_revision = reset( $post_revisions );
-
-			// Publish revision.
-			remove_action( 'pre_post_update', 'wp_save_post_revision' );
-			$status = wp_update_post( [ 'ID' => $latest_revision->ID, 'post_status' => 'publish' ], true );
-			add_action( 'pre_post_update', 'wp_save_post_revision' );
-
-			if ( is_wp_error( $status ) ) {
-				// TODO:
-				return false;
-			}
-		}
 
 		remove_filter( 'post_version_duplicate_meta_terms', '__return_false' );
+
+		if ( is_wp_error( $status ) ) {
+			// TODO: Failure state.
+			return false;
+		}
 
 		return true;
 	}
@@ -153,19 +175,18 @@ class VersionInterface {
 		 *
 		 * @param bool $show_hidden_versions
 		 * @param int  $post_id
-		 * @return void
 		 */
 		$show_hidden_versions = apply_filters( 'post_version_show_hidden_versions', false, $post_id );
 
-		// Get post revisions.
-		$show_hidden_versions && add_filter( 'post_version_show_hidden_versions_query', '__return_true' );
-		$revisions = wp_get_post_revisions( $post_id );
-		$show_hidden_versions && remove_filter( 'post_version_show_hidden_versions_query', '__return_true' );
-
-		// Filter to the wanted verions (published or published/draft).
-		$revisions = array_filter(
-			$revisions,
-			fn ( $revision ) => in_array( $revision->post_status, $show_hidden_versions ? [ 'publish', 'draft' ] : [ 'publish' ], true )
+		// Get post revisions, filtered to the wanted versions (published or published/draft).
+		$revisions = get_children(
+			[
+				'order'       => 'DESC',
+				'orderby'     => 'date ID',
+				'post_parent' => $post_id,
+				'post_type'   => 'revision',
+				'post_status' => $show_hidden_versions ? [ 'publish', 'draft' ] : [ 'publish' ],
+			]
 		);
 
 		// Check that each revision has a version and do not add duplicates (which shouldn't happen).
@@ -187,7 +208,7 @@ class VersionInterface {
 	/**
 	 * Get the current/latest version of a post.
 	 *
-	 * TODO: Handle revision post id's being passed.
+	 * If a revision ID is passed, the current version for its parent will be returned.
 	 *
 	 * @since 0.0.0
 	 *
@@ -196,6 +217,11 @@ class VersionInterface {
 	 */
 	public static function get_current_version( int $post_id ) : WP_Post {
 		$post = get_post( $post_id );
+
+		// If a revision was passed, get the latest version of its parent.
+		if ( $post->post_type === 'revision' ) {
+			return self::get_current_version( $post->post_parent );
+		}
 
 		// If the post's type is not versioned, return the main post.
 		if ( ! Options::is_post_type_versioned( $post->post_type ) ) {

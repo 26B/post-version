@@ -27,7 +27,7 @@ class Revision {
 		add_action( 'pre_delete_post', [ $this, 'stop_revision_delete' ], PHP_INT_MAX, 3 );
 
 		// Add filter to copy meta and terms to revision from original posts.
-		add_action( 'wp_insert_post', [ $this, 'copy_meta_and_terms' ], PHP_INT_MAX, 3 );
+		add_action( 'wp_insert_post', [ $this, 'add_filter_copy_meta_terms' ], PHP_INT_MAX, 3 );
 
 		// Check for changes in the post's meta or terms when its saved.
 		add_action( 'wp_save_post_revision_check_for_changes', [ $this, 'wp_save_post_revision_check_for_changes' ], PHP_INT_MAX, 10 );
@@ -80,7 +80,6 @@ class Revision {
 		 *
 		 * @param mixed   $delete_revision
 		 * @param WP_Post $post
-		 * @return mixed
 		 */
 		return apply_filters( 'post_version_delete_revision', $delete_revision, $post );
 	}
@@ -95,7 +94,7 @@ class Revision {
 	 * @param  bool    $update
 	 * @return void
 	 */
-	public function copy_meta_and_terms( int $post_id, WP_Post $post, bool $update ) : void {
+	public function add_filter_copy_meta_terms( int $post_id, WP_Post $post, bool $update ) : void {
 
 		// Ignore non revisions.
 		if ( $post->post_type !== 'revision' ) {
@@ -132,27 +131,46 @@ class Revision {
 		 * @param int     $post_id
 		 * @param WP_Post $post
 		 * @param bool    $update
-		 * @return bool
 		 */
 		if ( ! apply_filters( 'post_version_duplicate_meta_terms', true, $post_id, $post, $update ) ) {
 			return;
 		}
 
-		// Get original posts version.
-		$version = Version::get( $original_post_id );
+		/**
+		 * Add filters to copy the meta and terms from original post to latest revision after post
+		 * and its meta/terms are fully saved.
+		 */
+		add_filter( "_post_version_copy_meta_terms_{$original_post_id}", '__return_true' );
+		add_action( 'wp_insert_post', [ $this, 'maybe_copy_meta_terms' ], PHP_INT_MAX, 3 );
+	}
 
-		// TODO: shouldn't happen, how to handle?
-		if ( is_null( $version ) ) {
-			return;
-		}
+	/**
+	 * Checks if the post being saved should have its meta and terms copied to its latest revision.
+	 *
+	 * @since 0.0.0
+	 *
+	 * @param int     $post_id
+	 * @param WP_Post $post
+	 * @param bool    $update
+	 * @return void
+	 */
+	public function maybe_copy_meta_terms( int $post_id, WP_Post $post, bool $update ) : void {
 
 		/**
-		 * Add filter to copy the meta and terms from original post to latest revision after post
-		 * and its meta/terms are fully saved.
+		 * Filters whether to copy the meta and terms for specific post_id
 		 *
-		 * TODO: Have some way to only do it once for a post id and then remove the filter.
+		 * This is an internal filter used to make sure the meta and terms copy is only done once
+		 * and for a specific post_id after the revision is saved.
+		 *
+		 * @since 0.0.0
+		 * @param bool $copy
 		 */
-		add_action( 'wp_insert_post', [ self::class, 'copy_meta_terms' ], PHP_INT_MAX, 3 );
+		if ( ! apply_filters( "_post_version_copy_meta_terms_{$post_id}", false ) ) {
+			return;
+		}
+		remove_all_filters( "_post_version_copy_meta_terms_{$post_id}" );
+
+		self::copy_meta_terms_to_latest_revision( $post_id, $post );
 	}
 
 	/**
@@ -162,10 +180,9 @@ class Revision {
 	 *
 	 * @param int     $post_id
 	 * @param WP_Post $post
-	 * @param bool    $update
 	 * @return void
 	 */
-	public static function copy_meta_terms( int $post_id, WP_Post $post, bool $update ) : void {
+	public static function copy_meta_terms_to_latest_revision( int $post_id, WP_Post $post ) : void {
 		global $wpdb;
 
 		// Ignore revisions and unversioned post types.
@@ -186,14 +203,24 @@ class Revision {
 		 *
 		 * ACF copies the meta to the revision already.
 		 */
+
+		/**
+		 * Filters meta keys to ignore when copying the meta entries to the latest revision.
+		 *
+		 * @since 0.0.0
+		 *
+		 * @param int     $post_id
+		 * @param WP_Post $post
+		 * @param WP_Post $latest_revision
+		 */
+		$meta_keys_to_ignore = apply_filters( 'post_version_meta_keys_to_ignore', [ '_wp_old_slug' ], $post_id, $post, $latest_revision );
+
 		$post_meta     = get_post_meta( $post_id );
 		$revision_meta = get_post_meta( $latest_revision->ID );
 		$meta_diff     = [];
 		foreach ( $post_meta as $meta_key => $meta_values ) {
 			if (
-				// TODO: which meta keys to ignore.
-				in_array( $meta_key, [ '_wp_old_slug' ], true )
-				// TODO: double check these.
+				in_array( $meta_key, $meta_keys_to_ignore, true )
 				|| ! is_array( $meta_values )
 			) {
 				continue;
@@ -204,7 +231,6 @@ class Revision {
 				continue;
 			}
 
-			// TODO: double check these.
 			if ( ! is_array( $revision_meta[ $meta_key ] ) ) {
 				continue;
 			}
@@ -225,12 +251,11 @@ class Revision {
 		 * @param array   $meta_diff
 		 * @param WP_Post $post
 		 * @param WP_Post $latest_revision
-		 * @param bool    $update
-		 * @return array
 		 */
-		$meta_diff = apply_filters( 'post_version_meta_to_copy', $meta_diff, $post, $latest_revision, $update );
+		$meta_diff = apply_filters( 'post_version_meta_to_copy', $meta_diff, $post, $latest_revision );
 
-		// TODO: make sure there is only one post_version meta.
+		// Make sure there is only one post_version meta.
+		$meta_diff = self::remove_unnecessary_post_versions( $meta_diff );
 
 		// Copy meta to the revision.
 		if ( is_array( $meta_diff ) ) {
@@ -309,7 +334,6 @@ class Revision {
 		 *
 		 * @param bool     $show_hidden_versions
 		 * @param WP_Query $query
-		 * @return bool
 		 */
 		$show_hidden_versions = apply_filters( 'post_version_show_hidden_versions_query', false, $query );
 
@@ -317,5 +341,42 @@ class Revision {
 		if ( $show_hidden_versions ) {
 			$query->query_vars['post_status'][] = 'draft';
 		}
+	}
+
+	/**
+	 * Remove unnecessary post versions from an array of meta keys and meta values.
+	 *
+	 * Keep only the highest post version meta.
+	 *
+	 * @since 0.0.0
+	 *
+	 * @param array $meta
+	 * @return array
+	 */
+	private static function remove_unnecessary_post_versions( array $meta ) : array {
+		$post_versions = [];
+
+		foreach ( array_keys( $meta ) as $meta_key ) {
+			$matches = [];
+			if ( ! preg_match( '/post_version_([0-9]+)/', $meta_key, $matches ) ) {
+				continue;
+			}
+
+			$post_versions[ $matches[1] ] = $meta_key;
+		}
+
+		// Keep highest post version.
+		krsort( $post_versions );
+		$meta_key = array_shift( $post_versions );
+
+		// Make sure only one value for the highest post_version
+		$meta[ $meta_key ] = [ current( $meta[ $meta_key ] ) ];
+
+		// Remove other versions.
+		foreach ( $post_versions as $meta_key ) {
+			unset( $meta[ $meta_key ] );
+		}
+
+		return $meta;
 	}
 }
