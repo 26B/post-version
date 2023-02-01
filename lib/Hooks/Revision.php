@@ -33,7 +33,14 @@ class Revision {
 		add_action( 'wp_save_post_revision_check_for_changes', [ $this, 'wp_save_post_revision_check_for_changes' ], PHP_INT_MAX, 10 );
 
 		// Allow for more post statues for revisions during queries.
-		add_action( 'pre_get_posts', [ $this, 'allow_more_statuses_for_revisions' ],  PHP_INT_MAX );
+		add_action( 'pre_get_posts', [ $this, 'allow_more_statuses_for_revisions' ], PHP_INT_MAX );
+
+		// Add version to formatted revision title.
+		add_action( 'wp_post_revision_title_expanded', [ $this, 'add_version_to_revision_formatted_title' ], PHP_INT_MAX, 3 );
+
+		// Add terms diff to revision diff.
+		// TODO: Add non ACF meta to diff.
+		add_action( 'wp_get_revision_ui_diff', [ $this, 'add_info_to_revision_diff' ], PHP_INT_MAX, 3 );
 	}
 
 	/**
@@ -204,42 +211,8 @@ class Revision {
 		 * ACF copies the meta to the revision already.
 		 */
 
-		/**
-		 * Filters meta keys to ignore when copying the meta entries to the latest revision.
-		 *
-		 * @since 0.0.0
-		 *
-		 * @param int     $post_id
-		 * @param WP_Post $post
-		 * @param WP_Post $latest_revision
-		 */
-		$meta_keys_to_ignore = apply_filters( 'post_version_meta_keys_to_ignore', [ '_wp_old_slug' ], $post_id, $post, $latest_revision );
-
-		$post_meta     = get_post_meta( $post_id );
-		$revision_meta = get_post_meta( $latest_revision->ID );
-		$meta_diff     = [];
-		foreach ( $post_meta as $meta_key => $meta_values ) {
-			if (
-				in_array( $meta_key, $meta_keys_to_ignore, true )
-				|| ! is_array( $meta_values )
-			) {
-				continue;
-			}
-
-			if ( ! isset( $revision_meta[ $meta_key ] ) ) {
-				$meta_diff[ $meta_key ] = $meta_values;
-				continue;
-			}
-
-			if ( ! is_array( $revision_meta[ $meta_key ] ) ) {
-				continue;
-			}
-
-			$sub_meta_diff = array_diff( $meta_values, $revision_meta[ $meta_key ] );
-			if ( ! empty( $sub_meta_diff ) ) {
-				$meta_diff[ $meta_key ] = $sub_meta_diff;
-			}
-		}
+		// Get meta diff.
+		$meta_diff = self::meta_diff( $post_id, $latest_revision->ID );
 
 		/**
 		 * Filters the meta values that will be copied to the revision.
@@ -291,11 +264,27 @@ class Revision {
 	 * @return bool
 	 */
 	public function wp_save_post_revision_check_for_changes( bool $check_for_changes, WP_Post $latest_revision, WP_Post $post ) : bool {
-		// TODO: Check meta changing.
+
+		// Check meta changing.
+		$meta_diff = self::meta_diff( $post->ID, $latest_revision->ID );
+
+		// Remove post_versions from consideration.
+		$meta_diff = array_filter(
+			$meta_diff,
+			fn ( $meta_key ) => ! preg_match( '/post_version_([0-9]+)/', $meta_key, $matches ) ,
+			ARRAY_FILTER_USE_KEY
+		);
+
+		// If there are new meta entries, let WordPress create a new revision.
+		if ( ! empty( $meta_diff ) ) {
+			return false;
+		}
 
 		// Check terms changing.
 		$revision_terms = get_terms( [ 'object_ids' => $latest_revision->ID, 'fields' => 'ids' ] );
 		$post_terms     = get_terms( [ 'object_ids' => $post->ID, 'fields' => 'ids' ] );
+
+		// If there are new term relations, let WordPress create a new revision.
 		if ( ! empty( array_diff( $post_terms, $revision_terms ) ) ) {
 			return false;
 		}
@@ -378,5 +367,209 @@ class Revision {
 		}
 
 		return $meta;
+	}
+
+	/**
+	 * Get meta entries that exist in $post_1 that don't exist in $post_2.
+	 *
+	 * @since 0.0.0
+	 *
+	 * @param int $post_1
+	 * @param int $post_2
+	 * @return array
+	 */
+	private static function meta_diff( int $post_1, int $post_2 ) : array {
+
+		$default_ignore = [
+			'_wp_old_slug',
+			'_edit_lock',
+			'_encloseme',
+		];
+
+		/**
+		 * Filters meta keys to ignore when copying the meta entries.
+		 *
+		 * @since 0.0.0
+		 *
+		 * @param array $meta_keys_to_ignore
+		 * @param int   $post_1
+		 * @param int   $post_2
+		 */
+		$meta_keys_to_ignore = apply_filters( 'post_version_meta_keys_to_ignore', $default_ignore, $post_1, $post_2 );
+
+		$post_1_meta = get_post_meta( $post_1 );
+		$post_2_meta = get_post_meta( $post_2 );
+		$meta_diff   = [];
+		foreach ( $post_1_meta as $meta_key => $meta_values ) {
+			if (
+				in_array( $meta_key, $meta_keys_to_ignore, true )
+				|| ! is_array( $meta_values )
+			) {
+				continue;
+			}
+
+			if ( ! isset( $post_2_meta[ $meta_key ] ) ) {
+				$meta_diff[ $meta_key ] = $meta_values;
+				continue;
+			}
+
+			if ( ! is_array( $post_2_meta[ $meta_key ] ) ) {
+				continue;
+			}
+
+			$sub_meta_diff = array_diff( $meta_values, $post_2_meta[ $meta_key ] );
+			if ( ! empty( $sub_meta_diff ) ) {
+				$meta_diff[ $meta_key ] = $sub_meta_diff;
+			}
+		}
+
+		return $meta_diff;
+	}
+
+	/**
+	 * Add version information to revision's formatted title shown in revisions list.
+	 *
+	 * @since 0.0.0
+	 *
+	 * @param string  $revision_date_author
+	 * @param WP_Post $revision
+	 * @param bool    $link
+	 * @return string
+	 */
+	public function add_version_to_revision_formatted_title( string $revision_date_author, WP_Post $revision, bool $link ) : string {
+
+		// Ignore non versioned revisions.
+		if ( $revision->post_status !== 'draft' && $revision->post_status !== 'publish' ) {
+			return $revision_date_author;
+		}
+
+		// Ignore supposedly versioned revisions that are missing their revision meta.
+		$version = Version::get( $revision->ID );
+		if ( $version === null ) {
+			return $revision_date_author;
+		}
+
+		// Get the time diff string to add the version string to the original revision title string.
+		$time_diff            = human_time_diff( strtotime( $revision->post_modified_gmt ) );
+		$revision_date_author = str_replace(
+			"{$time_diff} ago",
+			"{$time_diff} ago <b>Version {$version->label()}</b>",
+			$revision_date_author
+		);
+
+		return $revision_date_author;
+	}
+
+	/**
+	 * Add information to revision diff.
+	 *
+	 * @since 0.0.0
+	 *
+	 * @param array        $return
+	 * @param bool|WP_Post $compare_from
+	 * @param WP_Post      $compare_to
+	 * @return array
+	 */
+	public function add_info_to_revision_diff( array $return, $compare_from, WP_Post $compare_to ) : array {
+		if ( ! Options::is_post_type_versioned( get_post( $compare_to->post_parent )->post_type ) ) {
+			return $return;
+		}
+
+		$return = $this->add_terms_diff( $return, $compare_from, $compare_to );
+		$return = $this->add_version_diff( $return, $compare_from, $compare_to );
+		return $return;
+	}
+
+	/**
+	 * Add the difference in terms between posts (revisions).
+	 *
+	 * @since 0.0.0
+	 *
+	 * @param array        $return
+	 * @param bool|WP_Post $compare_from
+	 * @param WP_Post      $compare_to
+	 * @return array
+	 */
+	private function add_terms_diff( array $return, $compare_from, WP_Post $compare_to ) : array {
+
+		// Function to output term into a string.
+		$term_output_fn = fn ( $term ) => "{$term->name} ({$term->term_id}, {$term->taxonomy})";
+
+		// Get terms for both posts and turn them into strings.
+		$from_terms = [];
+		$to_terms   = array_map( $term_output_fn, get_terms( [ 'object_ids' => $compare_to->ID ] ) );
+
+		// $compare_from might be bool when dealing with first revision.
+		if ( $compare_from instanceof WP_Post ) {
+			$from_terms = array_map( $term_output_fn, get_terms( [ 'object_ids' => $compare_from->ID ] ) );
+		}
+
+		// If there are no terms on both sides, ignore it.
+		if ( empty( $from_terms ) && empty( $to_terms ) ) {
+			return $return;
+		}
+
+		// Add terms difference to the revisions ui.
+
+		$args = [
+			'show_split_view' => true,
+			'title_left'      => __( 'Removed' ),
+			'title_right'     => __( 'Added' ),
+		];
+
+		$return[] = [
+			'id'   => 'post-version-terms',
+			'name' => __( 'Terms', 'post-version' ),
+			'diff' => wp_text_diff( implode( "\n", $from_terms ), implode( "\n", $to_terms ), $args ),
+		];
+
+		return $return;
+	}
+
+	/**
+	 * Add the difference in version between posts (revisions).
+	 *
+	 * @since 0.0.0
+	 *
+	 * @param array        $return
+	 * @param bool|WP_Post $compare_from
+	 * @param WP_Post      $compare_to
+	 * @return array
+	 */
+	private function add_version_diff( array $return, $compare_from, WP_Post $compare_to ) : array  {
+		$args = [ 'show_split_view' => true ];
+
+		// Get versions for both revisions.
+		$to_version   = Version::get( $compare_to->ID );
+		$from_version = $to_version;
+		if ( $compare_from instanceof WP_Post ) {
+			$from_version = Version::get( $compare_from->ID );
+		}
+
+		/** translators: 1: Version label, 2: Version number */
+		$name = sprintf( __( 'Post version %s (%s)', 'post-version' ), $to_version->label(), $to_version->version() );
+		$diff = '';
+
+		// Show side to side only if both versions are not the same.
+		if ( $to_version->version() !== $from_version->version() ) {
+			$name = __( 'Post version', 'post-version' );
+			$diff = wp_text_diff(
+				sprintf( '%s (%s)', $to_version->label(), $to_version->version() ),
+				sprintf( '%s (%s)', $from_version->label(), $from_version->version() ),
+				$args
+			);
+		}
+
+		// Add it at the start of the differences.
+		array_unshift(
+			$return,
+			[
+				'id'   => 'post-version-version',
+				'name' => $name,
+				'diff' => $diff,
+			]
+		);
+
+		return $return;
 	}
 }

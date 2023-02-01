@@ -107,19 +107,29 @@ class Admin {
 			return;
 		}
 
+
 		// Check if the current screen is for a post_type that is versioned.
 		$post_type = get_current_screen()->post_type;
 		if ( ! Options::is_post_type_versioned( $post_type ) ) {
 			return;
 		}
 
+		// TODO: search all the meta_boxes (deep search) to find where submitdiv is.
+
+		$side_key = null;
+		foreach ( [ 'core', 'sorted' ] as $meta_box_key ) {
+			if (
+				isset( $wp_meta_boxes[ $post_type ]['side'][ $meta_box_key ]['submitdiv'] )
+				&& ! empty( $wp_meta_boxes[ $post_type ]['side'][ $meta_box_key ]['submitdiv'] )
+			) {
+				$side_key = $meta_box_key;
+			}
+		}
+
 		// Alter the callback for the submit metabox to add PostVersion buttons.
-		if (
-			isset( $wp_meta_boxes[ $post_type ]['side']['core']['submitdiv'] )
-			&& ! empty( $wp_meta_boxes[ $post_type ]['side']['core']['submitdiv'] )
-		) {
-			$wp_meta_boxes[ $post_type ]['side']['core']['submitdiv']['args']['__old_callback'] = $wp_meta_boxes[ $post_type ]['side']['core']['submitdiv']['callback'];
-			$wp_meta_boxes[ $post_type ]['side']['core']['submitdiv']['callback']               = [ $this, 'submit_meta_box' ];
+		if ( $side_key ) {
+			$wp_meta_boxes[ $post_type ]['side'][ $side_key ]['submitdiv']['args']['__old_callback'] = $wp_meta_boxes[ $post_type ]['side'][ $side_key ]['submitdiv']['callback'];
+			$wp_meta_boxes[ $post_type ]['side'][ $side_key ]['submitdiv']['callback']               = [ $this, 'submit_meta_box' ];
 		}
 	}
 
