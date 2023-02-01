@@ -49,7 +49,7 @@ class Query {
 		 * @param array    $posts
 		 * @param WP_Query $query
 		 */
-		if ( ! apply_filters( 'post_version_show_unreleased', false, $posts, $query ) ) {
+		if ( apply_filters( 'post_version_show_unreleased', false, $posts, $query ) ) {
 			return $posts;
 		}
 

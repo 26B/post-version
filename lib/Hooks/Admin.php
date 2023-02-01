@@ -32,6 +32,8 @@ class Admin {
 
 		// Edit the callback for the submit meta box.
 		add_action( 'edit_form_after_editor', [ $this, 'edit_form_after_editor' ], PHP_INT_MAX );
+
+		// TODO: Quick edit still allows for publishing (and other statuses).
 	}
 
 	/**
@@ -106,7 +108,6 @@ class Admin {
 		if ( ! is_admin() || ! get_current_screen()->base === 'post' ) {
 			return;
 		}
-
 
 		// Check if the current screen is for a post_type that is versioned.
 		$post_type = get_current_screen()->post_type;

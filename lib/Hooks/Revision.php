@@ -24,23 +24,29 @@ class Revision {
 	public function register() : void {
 
 		// Stop revision's from being deleted when they are the last revision.
-		add_action( 'pre_delete_post', [ $this, 'stop_revision_delete' ], PHP_INT_MAX, 3 );
+		add_filter( 'pre_delete_post', [ $this, 'stop_revision_delete' ], PHP_INT_MAX, 3 );
 
 		// Add filter to copy meta and terms to revision from original posts.
 		add_action( 'wp_insert_post', [ $this, 'add_filter_copy_meta_terms' ], PHP_INT_MAX, 3 );
 
 		// Check for changes in the post's meta or terms when its saved.
-		add_action( 'wp_save_post_revision_check_for_changes', [ $this, 'wp_save_post_revision_check_for_changes' ], PHP_INT_MAX, 10 );
+		add_filter( 'wp_save_post_revision_check_for_changes', [ $this, 'wp_save_post_revision_check_for_changes' ], PHP_INT_MAX, 10 );
 
 		// Allow for more post statues for revisions during queries.
 		add_action( 'pre_get_posts', [ $this, 'allow_more_statuses_for_revisions' ], PHP_INT_MAX );
 
 		// Add version to formatted revision title.
-		add_action( 'wp_post_revision_title_expanded', [ $this, 'add_version_to_revision_formatted_title' ], PHP_INT_MAX, 3 );
+		add_filter( 'wp_post_revision_title_expanded', [ $this, 'add_version_to_revision_formatted_title' ], PHP_INT_MAX, 3 );
+
+		// Fix revision post type object. Needed for missing admin bar buttons when loading old versions in the frontend.
+		add_action( 'init', [ $this, 'update_revision_post_type_object' ] );
+
+		// Return post parent edit link in most cases for a revision edit.
+		add_filter( 'get_edit_post_link', [ $this, 'get_edit_post_link' ], PHP_INT_MAX, 3 );
 
 		// Add terms diff to revision diff.
 		// TODO: Add non ACF meta to diff.
-		add_action( 'wp_get_revision_ui_diff', [ $this, 'add_info_to_revision_diff' ], PHP_INT_MAX, 3 );
+		add_filter( 'wp_get_revision_ui_diff', [ $this, 'add_info_to_revision_diff' ], PHP_INT_MAX, 3 );
 	}
 
 	/**
@@ -458,6 +464,51 @@ class Revision {
 		);
 
 		return $revision_date_author;
+	}
+
+	/**
+	 * Update revision post type object.
+	 *
+	 * @since 0.0.2
+	 *
+	 * @return void
+	 */
+	public function update_revision_post_type_object() : void {
+		global $wp_post_types;
+
+		if ( ! isset( $wp_post_types['revision'] ) ) {
+			return;
+		}
+
+		$wp_post_types['revision']->show_in_admin_bar = true;
+	}
+
+	/**
+	 * Return revision's post_parent's edit link in most context's.
+	 *
+	 * @since 0.0.2
+	 *
+	 * @param string $link
+	 * @param int    $post_id
+	 * @param string $context
+	 * @return string
+	 */
+	public function get_edit_post_link( string $link, int $post_id, string $context ) : string {
+		$post = get_post( $post_id );
+		if (
+			! $post instanceof WP_Post
+			|| $post->post_type !== 'revision'
+			|| ! Options::is_post_type_versioned( get_post( $post->post_parent )->post_type )
+		) {
+			return $link;
+		}
+
+		// In post edit, we need to return the normal link to the revisions edit page.
+		if ( is_admin() && get_current_screen()->base === 'post' ) {
+			return $link;
+		}
+
+		return get_edit_post_link( $post->post_parent );
 	}
 
 	/**
