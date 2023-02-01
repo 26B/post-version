@@ -11,14 +11,14 @@ use WP_Post;
 /**
  * Hooks for admin/back-office of WordPress.
  *
- * @since 0.0.0
+ * @since 0.0.1
  */
 class Admin {
 
 	/**
 	 * Register hooks.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @return void
 	 */
@@ -37,7 +37,7 @@ class Admin {
 	/**
 	 * Hide post status selection when unreleased.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @return void
 	 */
@@ -58,7 +58,7 @@ class Admin {
 	/**
 	 * Handle create new version action.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @return void
 	 */
@@ -95,7 +95,7 @@ class Admin {
 	/**
 	 * Edit the callback for the submit meta box.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @return void
 	 */
@@ -136,7 +136,7 @@ class Admin {
 	/**
 	 * Alter the output for the original submit callback to include.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param $post
 	 * @param $args
@@ -207,7 +207,7 @@ class Admin {
 	/**
 	 * Add html to a DOMDocument as a child to an element.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param DOMDocument &$dom
 	 * @param string       $where_id

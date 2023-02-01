@@ -17,14 +17,14 @@ use TwentySixB\WP\Plugin\PostVersion\Hooks\Version;
  * Also maintains the unique identifier of this plugin as well as the current
  * version of the plugin.
  *
- * @since 0.0.0
+ * @since 0.0.1
  */
 class Plugin {
 
 	/**
 	 * The unique identifier of this plugin.
 	 *
-	 * @since  0.0.0
+	 * @since  0.0.1
 	 * @access protected
 	 * @var    string
 	 */
@@ -33,7 +33,7 @@ class Plugin {
 	/**
 	 * The current version of the plugin.
 	 *
-	 * @since  0.0.0
+	 * @since  0.0.1
 	 * @access protected
 	 * @var    string
 	 */
@@ -42,7 +42,7 @@ class Plugin {
 	/**
 	 * Define the core functionality of the plugin.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 * @param string $name    The plugin identifier.
 	 * @param string $version Current version of the plugin.
 	 */
@@ -57,7 +57,7 @@ class Plugin {
 	 * Load the dependencies, define the locale, and set the hooks for the
 	 * Dashboard and the public-facing side of the site.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 */
 	public function run() {
 		$this->set_locale();
@@ -69,7 +69,7 @@ class Plugin {
 	 * The name of the plugin used to uniquely identify it within the context of
 	 * WordPress and to define internationalization functionality.
 	 *
-	 * @since  0.0.0
+	 * @since  0.0.1
 	 * @return string The name of the plugin.
 	 */
 	public function get_name() {
@@ -79,7 +79,7 @@ class Plugin {
 	/**
 	 * Returns the version number of the plugin.
 	 *
-	 * @since  0.0.0
+	 * @since  0.0.1
 	 * @return string The version number of the plugin.
 	 */
 	public function get_version() {
@@ -92,7 +92,7 @@ class Plugin {
 	 * Uses the I18n class in order to set the domain and to register the hook
 	 * with WordPress.
 	 *
-	 * @since  0.0.0
+	 * @since  0.0.1
 	 * @access private
 	 */
 	private function set_locale() {
@@ -104,7 +104,7 @@ class Plugin {
 	/**
 	 * Register all of the hooks related to the general functionality of the plugin.
 	 *
-	 * @since  0.0.0
+	 * @since  0.0.1
 	 * @access private
 	 */
 	private function define_plugin_hooks() {
@@ -125,7 +125,7 @@ class Plugin {
 	 * Register all of the hooks related to the public-facing functionality
 	 * of the plugin.
 	 *
-	 * @since  0.0.0
+	 * @since  0.0.1
 	 * @access private
 	 */
 	private function define_frontend_hooks() {

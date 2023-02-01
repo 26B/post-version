@@ -8,7 +8,7 @@ use WP_Post;
 /**
  * Hooks related to PostVersion's custom post statuses.
  *
- * @since 0.0.0
+ * @since 0.0.1
  */
 class Status {
 
@@ -23,7 +23,7 @@ class Status {
 	/**
 	 * Register hooks.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @return void
 	 */
@@ -39,7 +39,7 @@ class Status {
 	/**
 	 * Register the unreleased post status.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @return void
 	 */
@@ -67,7 +67,7 @@ class Status {
 	 * TODO: This might need to be changed to allow the post to be put into draft, hiding the post
 	 * and all its versions.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param array $data
 	 * @param array $postarr
@@ -98,7 +98,7 @@ class Status {
 		 *
 		 * TODO: Better name.
 		 *
-		 * @since 0.0.0
+		 * @since 0.0.1
 		 *
 		 * @param bool    $prevent_change
 		 * @param WP_Post $post

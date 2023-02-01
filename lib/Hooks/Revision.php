@@ -10,14 +10,14 @@ use WP_Query;
 /**
  * Hooks for revisions related functionality of WordPress.
  *
- * @since 0.0.0
+ * @since 0.0.1
  */
 class Revision {
 
 	/**
 	 * Register hooks.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @return void
 	 */
@@ -48,7 +48,7 @@ class Revision {
 	 *
 	 * TODO: Handle $force_delete.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param WP_Post|false|null $delete
 	 * @param WP_Post            $post
@@ -83,7 +83,7 @@ class Revision {
 		/**
 		 * Filters whether a revision is deleted or not.
 		 *
-		 * @since 0.0.0
+		 * @since 0.0.1
 		 *
 		 * @param mixed   $delete_revision
 		 * @param WP_Post $post
@@ -94,7 +94,7 @@ class Revision {
 	/**
 	 * Add filter to copy meta and terms to revision from original posts.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param  int     $post_id
 	 * @param  WP_Post $post
@@ -132,7 +132,7 @@ class Revision {
 		/**
 		 * Filters whether to stop a revisions meta and term duplication.
 		 *
-		 * @since 0.0.0
+		 * @since 0.0.1
 		 *
 		 * @param bool    $duplicate
 		 * @param int     $post_id
@@ -154,7 +154,7 @@ class Revision {
 	/**
 	 * Checks if the post being saved should have its meta and terms copied to its latest revision.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param int     $post_id
 	 * @param WP_Post $post
@@ -169,7 +169,7 @@ class Revision {
 		 * This is an internal filter used to make sure the meta and terms copy is only done once
 		 * and for a specific post_id after the revision is saved.
 		 *
-		 * @since 0.0.0
+		 * @since 0.0.1
 		 * @param bool $copy
 		 */
 		if ( ! apply_filters( "_post_version_copy_meta_terms_{$post_id}", false ) ) {
@@ -183,7 +183,7 @@ class Revision {
 	/**
 	 * Copy a post's meta and terms to its latest revision.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param int     $post_id
 	 * @param WP_Post $post
@@ -219,7 +219,7 @@ class Revision {
 		 *
 		 * Some meta values might have been copied already through other plugins like ACF.
 		 *
-		 * @since 0.0.0
+		 * @since 0.0.1
 		 *
 		 * @param array   $meta_diff
 		 * @param WP_Post $post
@@ -256,7 +256,7 @@ class Revision {
 	/**
 	 * Check for changes in the post's meta or terms when its saved.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param bool    $check_for_changes
 	 * @param WP_Post $latest_revision
@@ -301,7 +301,7 @@ class Revision {
 	 * Filter get_children called in wp-includes/revision.php:511. Published revisions don't show up
 	 * in the list.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param WP_Query $query
 	 * @return void
@@ -319,7 +319,7 @@ class Revision {
 		/**
 		 * Filters whether to show hidden post versions in revision queries.
 		 *
-		 * @since 0.0.0
+		 * @since 0.0.1
 		 *
 		 * @param bool     $show_hidden_versions
 		 * @param WP_Query $query
@@ -337,7 +337,7 @@ class Revision {
 	 *
 	 * Keep only the highest post version meta.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param array $meta
 	 * @return array
@@ -372,7 +372,7 @@ class Revision {
 	/**
 	 * Get meta entries that exist in $post_1 that don't exist in $post_2.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param int $post_1
 	 * @param int $post_2
@@ -389,7 +389,7 @@ class Revision {
 		/**
 		 * Filters meta keys to ignore when copying the meta entries.
 		 *
-		 * @since 0.0.0
+		 * @since 0.0.1
 		 *
 		 * @param array $meta_keys_to_ignore
 		 * @param int   $post_1
@@ -429,7 +429,7 @@ class Revision {
 	/**
 	 * Add version information to revision's formatted title shown in revisions list.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param string  $revision_date_author
 	 * @param WP_Post $revision
@@ -463,7 +463,7 @@ class Revision {
 	/**
 	 * Add information to revision diff.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param array        $return
 	 * @param bool|WP_Post $compare_from
@@ -483,7 +483,7 @@ class Revision {
 	/**
 	 * Add the difference in terms between posts (revisions).
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param array        $return
 	 * @param bool|WP_Post $compare_from
@@ -529,7 +529,7 @@ class Revision {
 	/**
 	 * Add the difference in version between posts (revisions).
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param array        $return
 	 * @param bool|WP_Post $compare_from

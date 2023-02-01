@@ -12,14 +12,14 @@ use WP_Post;
 /**
  * Interface for methods related to post versions.
  *
- * @since 0.0.0
+ * @since 0.0.1
  */
 class VersionInterface {
 
 	/**
 	 * Get a post's version.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param int        $post_id
 	 * @param int|string $version
@@ -49,7 +49,7 @@ class VersionInterface {
 	/**
 	 * Create a new post's version.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param int $post_id
 	 * @return bool True if new version was created, false otherwise.
@@ -74,7 +74,7 @@ class VersionInterface {
 		/**
 		 * Filters the new label for a versioned post.
 		 *
-		 * @since 0.0.0
+		 * @since 0.0.1
 		 *
 		 * @param int     $new_version_number
 		 * @param int     $post_id
@@ -141,7 +141,7 @@ class VersionInterface {
 	/**
 	 * Get published versions of a post.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param int $post_id
 	 * @return array Array of versioned WP_Post's, indexed by their version number.
@@ -171,7 +171,7 @@ class VersionInterface {
 		/**
 		 * Filters whether hidden (draft) post versions should be returned.
 		 *
-		 * @since 0.0.0
+		 * @since 0.0.1
 		 *
 		 * @param bool $show_hidden_versions
 		 * @param int  $post_id
@@ -210,7 +210,7 @@ class VersionInterface {
 	 *
 	 * If a revision ID is passed, the current version for its parent will be returned.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param int $post_id
 	 * @return WP_Post The current/latest version.
@@ -253,7 +253,7 @@ class VersionInterface {
 	 *
 	 * Deletes the published revision for the request post's version.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param int        $post_id
 	 * @param int|string $version
@@ -284,7 +284,7 @@ class VersionInterface {
 	 *
 	 * Sets a revision version's post_status to 'draft'.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param int $post_id
 	 * @param int|string $version
@@ -320,7 +320,7 @@ class VersionInterface {
 	 *
 	 * Sets a revision version's post_status to 'publish'.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param int        $post_id
 	 * @param int|string $version

@@ -9,14 +9,14 @@ use WP_Post;
 /**
  * Hooks related to post versions.
  *
- * @since 0.0.0
+ * @since 0.0.1
  */
 class Version {
 
 	/**
 	 * Register hooks.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @return void
 	 */
@@ -29,7 +29,7 @@ class Version {
 	/**
 	 * Add initial post_version when a new post is saved.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param int     $post_id
 	 * @param WP_Post $post

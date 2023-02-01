@@ -5,14 +5,14 @@ namespace TwentySixB\WP\Plugin\PostVersion;
 /**
  * Handler for the `post_version_options` option.
  *
- * @since 0.0.0
+ * @since 0.0.1
  */
 class Options {
 
 	/**
 	 * Default values for options.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @var array
 	 */
@@ -23,7 +23,7 @@ class Options {
 	/**
 	 * Returns Post Version's options.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @return array
 	 */
@@ -53,7 +53,7 @@ class Options {
 	/**
 	 * Returns whether a post type is versioned.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param string $post_type
 	 * @return bool
@@ -66,7 +66,7 @@ class Options {
 	/**
 	 * Validate option values.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param array $options
 	 * @return array

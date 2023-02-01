@@ -10,14 +10,14 @@ use WP_Query;
 /**
  * Hooks for queries of WordPress.
  *
- * @since 0.0.0
+ * @since 0.0.1
  */
 class Query {
 
 	/**
 	 * Register hooks.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @return void
 	 */
@@ -30,7 +30,7 @@ class Query {
 	/**
 	 * Map the query post results to the latest versions.
 	 *
-	 * @since 0.0.0
+	 * @since 0.0.1
 	 *
 	 * @param  array    $posts
 	 * @param  WP_Query $query
@@ -43,7 +43,7 @@ class Query {
 		 *
 		 * Skip mapping of unreleased WP_Post's to their latest versions.
 		 *
-		 * @since 0.0.0
+		 * @since 0.0.1
 		 *
 		 * @param bool     $show
 		 * @param array    $posts
