@@ -44,9 +44,13 @@ class Revision {
 		// Return post parent edit link in most cases for a revision edit.
 		add_filter( 'get_edit_post_link', [ $this, 'get_edit_post_link' ], PHP_INT_MAX, 3 );
 
+		// Restore post revision version and copied meta.
+		add_action( 'wp_restore_post_revision', [ $this, 'wp_restore_post_revision' ], 0, 2 );
+
 		// Add terms diff to revision diff.
 		// TODO: Add non ACF meta to diff.
 		add_filter( 'wp_get_revision_ui_diff', [ $this, 'add_info_to_revision_diff' ], PHP_INT_MAX, 3 );
+
 	}
 
 	/**
@@ -509,6 +513,50 @@ class Revision {
 		}
 
 		return get_edit_post_link( $post->post_parent );
+	}
+
+	public function wp_restore_post_revision( $post_id, $revision_id ) : void {
+
+		// Core keys to keep in the original post.
+		$core_meta_keys = [
+			'full_meta_keys' => [
+				'_wp_attached_file',
+				'_wp_attachment_metadata',
+				'_edit_lock',
+				'_edit_last',
+				'_wp_old_slug',
+				'_wp_old_date',
+				'_wp_page_template',
+				'_thumbnail_id',
+			],
+			'prefix_meta_keys' => [
+				'_menu_item_',
+			],
+		];
+
+		// Remove all of the non WordPress core meta entries.
+		$post_meta = get_post_meta( $post_id );
+		foreach ( array_keys( $post_meta ) as $meta_key ) {
+			if ( in_array( $meta_key, $core_meta_keys['full_meta_keys'], true ) ) {
+				continue;
+			}
+			foreach ( $core_meta_keys['prefix_meta_keys'] as $prefix ) {
+				if ( str_starts_with( $meta_key, $prefix ) ) {
+					continue 2;
+				}
+			}
+			delete_post_meta( $post_id, $meta_key );
+		}
+
+		// Copy every meta entry from $revision_id over to $post_id.
+		$revision_meta = get_post_meta( $revision_id );
+		foreach ( $revision_meta as $meta_key => $meta_values ) {
+			foreach ( $meta_values as $meta_value ) {
+				add_post_meta( $post_id, $meta_key, $meta_value );
+			}
+		}
+
+		// TODO: ACF will run after this so there might be issues.
 	}
 
 	/**
