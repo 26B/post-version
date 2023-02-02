@@ -38,6 +38,11 @@ class Query {
 	 */
 	public function map_results_to_latest_version( array $posts, WP_Query $query ) : array {
 
+		// Ignore queries in the backoffice.
+		if ( is_admin() ) {
+			return $posts;
+		}
+
 		/**
 		 * Filter whether to show unreleased posts.
 		 *

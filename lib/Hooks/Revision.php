@@ -605,8 +605,8 @@ class Revision {
 		if ( $to_version->version() !== $from_version->version() ) {
 			$name = __( 'Post version', 'post-version' );
 			$diff = wp_text_diff(
-				sprintf( '%s (%s)', $to_version->label(), $to_version->version() ),
 				sprintf( '%s (%s)', $from_version->label(), $from_version->version() ),
+				sprintf( '%s (%s)', $to_version->label(), $to_version->version() ),
 				$args
 			);
 		}
