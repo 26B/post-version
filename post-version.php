@@ -1,10 +1,10 @@
 <?php
 /**
  * @wordpress-plugin
- * Plugin Name: post-version
+ * Plugin Name: Post Version
  * Plugin URI:  https://github.com/26B/post-version
  * Description: A WordPress Plugin to version your posts.
- * Version:     0.0.1
+ * Version:     0.0.3
  * Author:      26B
  * Author URI:  https://26b.io/
  * License:     GPL-2.0+
