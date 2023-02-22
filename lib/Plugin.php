@@ -7,6 +7,7 @@ use TwentySixB\WP\Plugin\PostVersion\Hooks\Query;
 use TwentySixB\WP\Plugin\PostVersion\Hooks\Revision;
 use TwentySixB\WP\Plugin\PostVersion\Hooks\Status;
 use TwentySixB\WP\Plugin\PostVersion\Hooks\Version;
+use WP_CLI;
 
 /**
  * The core plugin class.
@@ -63,6 +64,7 @@ class Plugin {
 		$this->set_locale();
 		$this->define_plugin_hooks();
 		$this->define_frontend_hooks();
+		$this->define_cli_commands();
 	}
 
 	/**
@@ -137,5 +139,25 @@ class Plugin {
 		foreach ( $components as $component ) {
 			$component->register();
 		}
+	}
+
+	/**
+	 * Define CLI commands.
+	 *
+	 * @since 0.0.3
+	 *
+	 * @return void
+	 */
+	private function define_cli_commands() : void {
+		$commands = [
+			CLI\Version::class => 'post-version',
+		];
+		\add_action( 'init', function () use ( $commands ) {
+			foreach ( $commands as $cli_class => $command_name ) {
+				if ( class_exists( 'WP_CLI' ) ) {
+					WP_CLI::add_command( $command_name, $cli_class );
+				}
+			}
+		} );
 	}
 }

@@ -8,6 +8,9 @@ class Version {
 	private int $version;
 	private string $label;
 
+	// TODO: Add status (shown, hidden, unreleased) to the version.
+	private string $status;
+
 	public static function get( int $post_id ) : ?Version {
 
 		// Check post's type is versioned.

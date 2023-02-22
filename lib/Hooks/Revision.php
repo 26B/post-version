@@ -447,6 +447,7 @@ class Revision {
 	 * @return string
 	 */
 	public function add_version_to_revision_formatted_title( string $revision_date_author, WP_Post $revision, bool $link ) : string {
+		// TODO: Add url with version arg.
 
 		// Ignore non versioned revisions.
 		if ( $revision->post_status !== 'draft' && $revision->post_status !== 'publish' ) {

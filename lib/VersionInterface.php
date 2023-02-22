@@ -200,6 +200,8 @@ class VersionInterface {
 			$revision->post_version                = $version;
 			$revision->post_name                   = $post->post_name;
 			$versions_found[ $version->version() ] = $revision;
+
+			// TODO: add version query arg to post url.
 		}
 
 		return $versions_found;
@@ -351,5 +353,32 @@ class VersionInterface {
 		$status = wp_update_post( [ 'ID' => $version->ID, 'post_status' => 'publish' ], true );
 		add_action( 'pre_post_update', 'wp_save_post_revision' );
 		return ! is_wp_error( $status );
+	}
+
+	/**
+	 * Returns the post permalink for a specific version.
+	 *
+	 * @since 0.0.3
+	 *
+	 * @param int $post_id
+	 * @param int|string $version
+	 * @return ?string
+	 */
+	public static function get_version_permalink( int $post_id, int|string $version ) : ?string {
+
+		// Get the requested version.
+		$version = self::get_version( $post_id, $version );
+		if ( $version === null ) {
+			return null;
+		}
+
+		$permalink = get_permalink( $post_id );
+
+		// If the version's post is the main post, return the normal permalink.
+		if ( empty( $version->post_parent ) ) {
+			return $permalink;
+		}
+
+		return add_query_arg( 'version', $version->post_version->version(), $permalink );
 	}
 }
