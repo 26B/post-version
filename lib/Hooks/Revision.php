@@ -4,6 +4,7 @@ namespace TwentySixB\WP\Plugin\PostVersion\Hooks;
 
 use TwentySixB\WP\Plugin\PostVersion\Options;
 use TwentySixB\WP\Plugin\PostVersion\Version;
+use TwentySixB\WP\Plugin\PostVersion\VersionInterface;
 use WP_Post;
 use WP_Query;
 
@@ -446,7 +447,6 @@ class Revision {
 	 * @return string
 	 */
 	public function add_version_to_revision_formatted_title( string $revision_date_author, WP_Post $revision, bool $link ) : string {
-		// TODO: Add url with version arg.
 
 		// Ignore non versioned revisions.
 		if ( $revision->post_status !== 'draft' && $revision->post_status !== 'publish' ) {
@@ -454,16 +454,36 @@ class Revision {
 		}
 
 		// Ignore supposedly versioned revisions that are missing their revision meta.
+		add_filter( 'post_version_show_hidden_versions', '__return_true' );
 		$version = Version::get( $revision->ID );
+		remove_filter( 'post_version_show_hidden_versions', '__return_true' );
 		if ( $version === null ) {
 			return $revision_date_author;
 		}
 
-		// Get the time diff string to add the version string to the original revision title string.
-		$time_diff            = human_time_diff( strtotime( $revision->post_modified_gmt ) );
+
+		// Get date string to add the version string to the original revision title string.
+		$datef = _x( 'F j, Y @ H:i:s', 'revision date format' );
+		$date  = date_i18n( $datef, strtotime( $revision->post_modified ) );
+		$edit_link = get_edit_post_link( $revision->ID );
+		if ( $link && current_user_can( 'edit_post', $revision->ID ) && $edit_link ) {
+			$date = "<a href='$edit_link'>$date</a>";
+		}
+
+		$version_permalink = VersionInterface::get_version_permalink( $revision->post_parent, $version->version() );
+
 		$revision_date_author = str_replace(
-			"{$time_diff} ago",
-			"{$time_diff} ago <b>Version {$version->label()}</b>",
+			"({$date})",
+			"({$date}) " . sprintf(
+				"<b>%s</b> %s",
+				/* translators: 1: Version label, 2: Version status if hidden */
+				sprintf( __( 'Version %1$s%2$s', 'post-version' ), $version->label(), $revision->post_status !== 'draft' ? '' : " ({$version->status()})" ),
+				empty( $version_permalink ) ? '' : sprintf(
+					"(<a href='%s'>%s</a>)",
+					$version_permalink,
+					__( 'View version', 'post-version' ),
+				),
+			),
 			$revision_date_author
 		);
 
@@ -645,12 +665,16 @@ class Revision {
 			$from_version = Version::get( $compare_from->ID );
 		}
 
+		if ( ! $to_version instanceof Version ) {
+			return $return;
+		}
+
 		/** translators: 1: Version label, 2: Version number */
-		$name = sprintf( __( 'Post version %s (%s)', 'post-version' ), $to_version->label(), $to_version->version() );
+		$name = sprintf( __( 'Post version %s (%s) - Status: %s', 'post-version' ), $to_version->label(), $to_version->version(), $to_version->status() );
 		$diff = '';
 
 		// Show side to side only if both versions are not the same.
-		if ( $to_version->version() !== $from_version->version() ) {
+		if ( $to_version instanceof Version && $from_version instanceof Version && $to_version->version() !== $from_version->version() ) {
 			$name = __( 'Post version', 'post-version' );
 			$diff = wp_text_diff(
 				sprintf( '%s (%s)', $from_version->label(), $from_version->version() ),

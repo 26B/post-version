@@ -33,6 +33,9 @@ class Admin {
 		// Edit the callback for the submit meta box.
 		add_action( 'edit_form_after_editor', [ $this, 'edit_form_after_editor' ], PHP_INT_MAX );
 
+		// Show hidden versions in admin for post edit and revisions screens.
+		add_action( 'current_screen', [ $this, 'show_hidden_revisions_in_admin' ] );
+
 		// TODO: Quick edit still allows for publishing (and other statuses).
 	}
 
@@ -66,8 +69,13 @@ class Admin {
 	 */
 	public function create_new_version() : void {
 
+		// Check for backoffice.
+		if ( ! is_admin() ) {
+			return;
+		}
+
 		// If in backoffice, check for post edit via current screen.
-		if ( ! is_admin() || ! get_current_screen()->base === 'post' ) {
+		if ( get_current_screen()->base !== 'post' ) {
 			return;
 		}
 
@@ -104,8 +112,13 @@ class Admin {
 	public function edit_form_after_editor() : void {
 		global $wp_meta_boxes;
 
+		// Check for backoffice.
+		if ( ! is_admin() ) {
+			return;
+		}
+
 		// If in backoffice, check for post edit via current screen.
-		if ( ! is_admin() || ! get_current_screen()->base === 'post' ) {
+		if ( get_current_screen()->base !== 'post' ) {
 			return;
 		}
 
@@ -203,6 +216,28 @@ class Admin {
 
 		// Output html.
 		echo $dom->saveHTML();
+	}
+
+	/**
+	 * Show hidden versions in admin for post edit and revisions screens.
+	 *
+	 * @since 0.0.3
+	 *
+	 * @return void
+	 */
+	public function show_hidden_revisions_in_admin() : void {
+
+		// Check for backoffice.
+		if ( ! is_admin() ) {
+			return;
+		}
+
+		// If in backoffice, check for post edit via current screen.
+		if ( get_current_screen()->base !== 'post' && get_current_screen()->base !== 'revision' ) {
+			return;
+		}
+
+		add_filter( 'post_version_show_hidden_versions_query', '__return_true' );
 	}
 
 	/**
