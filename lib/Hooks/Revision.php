@@ -50,7 +50,6 @@ class Revision {
 		// Add terms diff to revision diff.
 		// TODO: Add non ACF meta to diff.
 		add_filter( 'wp_get_revision_ui_diff', [ $this, 'add_info_to_revision_diff' ], PHP_INT_MAX, 3 );
-
 	}
 
 	/**

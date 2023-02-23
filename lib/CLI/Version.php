@@ -48,15 +48,8 @@ class Version extends WP_CLI_Command {
 		WP_CLI::log( __( 'Versions:', 'post-version' ) );
 		$indent = str_repeat( ' ', 4 );
 		foreach ( $post_versions as $post_version ) {
-			$version        = PostVersion::get( $post_version->ID );
-			$version_status = 'Live';
-			if ( $post_version->post_status === 'draft' ) {
-				$version_status = 'Hidden';
-			} else if ( $post_version->post_status === 'unreleased' ) {
-				$version_status = 'Unreleased';
-			}
-
-			WP_CLI::log( sprintf( '- %s (%s) : %s', $version->label(), $version->version(), $version_status ) );
+			$version = PostVersion::get( $post_version->ID );
+			WP_CLI::log( sprintf( '- %s (%s) : %s', $version->label(), $version->version(), $version->status() ) );
 			if ( ! $verbose ) {
 				continue;
 			}

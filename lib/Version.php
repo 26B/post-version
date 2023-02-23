@@ -2,13 +2,13 @@
 
 namespace TwentySixB\WP\Plugin\PostVersion;
 
+use WP_Post;
+
 class Version {
 
 	private int $post_id;
 	private int $version;
 	private string $label;
-
-	// TODO: Add status (shown, hidden, unreleased) to the version.
 	private string $status;
 
 	public static function get( int $post_id ) : ?Version {
@@ -43,16 +43,17 @@ class Version {
 		}
 
 		if ( $highest_version ) {
-			$version = new self( $post_id, $highest_version[0], $highest_version[1] );
+			$version = new self( $post_id, $highest_version[0], $highest_version[1], self::get_status( $post ) );
 		}
 
 		return $version;
 	}
 
-	public function __construct( int $post_id, int $version, string $label ) {
+	public function __construct( int $post_id, int $version, string $label, string $status ) {
 		$this->post_id = $post_id;
 		$this->version = $version;
 		$this->label   = $label;
+		$this->status   = $status;
 	}
 
 	public function post_id() : int {
@@ -65,5 +66,25 @@ class Version {
 
 	public function label() : string {
 		return $this->label;
+	}
+
+	public function status() : string {
+		return $this->status;
+	}
+
+	private static function get_status( WP_Post $post ) : string {
+		$status_string = __( 'Unknown', 'post-version' );
+		switch ( $post->post_status ) {
+			case 'publish':
+				$status_string = __( 'Live', 'post-version' );
+				break;
+			case 'draft':
+				$status_string = __( 'Hidden', 'post-version' );
+				break;
+			case 'unreleased':
+				$status_string = __( 'Unreleased', 'post-version' );
+				break;
+		}
+		return $status_string;
 	}
 }
