@@ -51,6 +51,9 @@ class Revision {
 		// Add terms diff to revision diff.
 		// TODO: Add non ACF meta to diff.
 		add_filter( 'wp_get_revision_ui_diff', [ $this, 'add_info_to_revision_diff' ], PHP_INT_MAX, 3 );
+
+		// Return the versions permalink if the received post is a published versioned revision.
+		add_filter( 'post_link', [ $this, 'version_permalink' ], 10, 2 );
 	}
 
 	/**
@@ -470,14 +473,18 @@ class Revision {
 			$date = "<a href='$edit_link'>$date</a>";
 		}
 
-		$version_permalink = VersionInterface::get_version_permalink( $revision->post_parent, $version->version() );
+
+		$version_permalink = '';
+		if ( $revision->post_status !== 'draft' ) {
+			$version_permalink = get_permalink( $revision );
+		}
 
 		$revision_date_author = str_replace(
 			"({$date})",
 			"({$date}) " . sprintf(
 				"<b>%s</b> %s",
 				/* translators: 1: Version label, 2: Version status if hidden */
-				sprintf( __( 'Version %1$s%2$s', 'post-version' ), $version->label(), $revision->post_status !== 'draft' ? '' : " ({$version->status()})" ),
+				sprintf( __( 'Version %1$s%2$s', 'post-version' ), $version->label(), $version->status() !== 'draft' ? '' : " ({$version->pretty_status()})" ),
 				empty( $version_permalink ) ? '' : sprintf(
 					"(<a href='%s'>%s</a>)",
 					$version_permalink,
@@ -670,7 +677,7 @@ class Revision {
 		}
 
 		/** translators: 1: Version label, 2: Version number */
-		$name = sprintf( __( 'Post version %s (%s) - Status: %s', 'post-version' ), $to_version->label(), $to_version->version(), $to_version->status() );
+		$name = sprintf( __( 'Post version %s (%s) - Status: %s', 'post-version' ), $to_version->label(), $to_version->version(), $to_version->pretty_status() );
 		$diff = '';
 
 		// Show side to side only if both versions are not the same.
@@ -694,5 +701,31 @@ class Revision {
 		);
 
 		return $return;
+	}
+
+	/**
+	 * Return the versions permalink if the received post is a published versioned revision.
+	 *
+	 * @since 0.0.3
+	 *
+	 * @param string  $permalink
+	 * @param WP_Post $post
+	 * @return string
+	 */
+	public function version_permalink( string $permalink, WP_Post $post ) : string {
+		if ( $post->post_type !== 'revision' ) {
+			return $permalink;
+		}
+
+		if ( $post->post_status !== 'publish' ) {
+			return $permalink;
+		}
+
+		$version = Version::get( $post->ID );
+		if ( ! $version instanceof Version ) {
+			return $permalink;
+		}
+
+		return VersionInterface::get_version_permalink( $post->post_parent, $version->version() );
 	}
 }

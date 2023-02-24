@@ -200,8 +200,6 @@ class VersionInterface {
 			$revision->post_version                = $version;
 			$revision->post_name                   = $post->post_name;
 			$versions_found[ $version->version() ] = $revision;
-
-			// TODO: add version query arg to post url.
 		}
 
 		return $versions_found;

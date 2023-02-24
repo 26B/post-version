@@ -49,14 +49,17 @@ class Version extends WP_CLI_Command {
 		$indent = str_repeat( ' ', 4 );
 		foreach ( $post_versions as $post_version ) {
 			$version = PostVersion::get( $post_version->ID );
-			WP_CLI::log( sprintf( '- %s (%s) : %s', $version->label(), $version->version(), $version->status() ) );
+			WP_CLI::log( sprintf( '- %s (%s) : %s', $version->label(), $version->version(), $version->pretty_status() ) );
 			if ( ! $verbose ) {
 				continue;
 			}
 
 			WP_CLI::log( $indent . sprintf( '%s: %s', __( 'Post ID', 'post-version' ), $post_version->ID ) );
-			WP_CLI::log( $indent . sprintf( '%s: %s', __( 'URL', 'post-version' ), VersionInterface::get_version_permalink( $post->ID, $version->version() ) ) );
 			WP_CLI::log( $indent . sprintf( '%s: %s', __( 'Last modified on', 'post-version' ), $post_version->post_modified ) );
+
+			if ( $post_version->post_status === 'publish' ) {
+				WP_CLI::log( $indent . sprintf( '%s: %s', __( 'URL', 'post-version' ), get_permalink( $post_version->ID ) ) );
+			}
 		}
 	}
 

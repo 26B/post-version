@@ -43,7 +43,7 @@ class Version {
 		}
 
 		if ( $highest_version ) {
-			$version = new self( $post_id, $highest_version[0], $highest_version[1], self::get_status( $post ) );
+			$version = new self( $post_id, $highest_version[0], $highest_version[1], $post->post_status );
 		}
 
 		return $version;
@@ -72,9 +72,9 @@ class Version {
 		return $this->status;
 	}
 
-	private static function get_status( WP_Post $post ) : string {
+	public function pretty_status() : string {
 		$status_string = __( 'Unknown', 'post-version' );
-		switch ( $post->post_status ) {
+		switch ( $this->status ) {
 			case 'publish':
 				$status_string = __( 'Live', 'post-version' );
 				break;
