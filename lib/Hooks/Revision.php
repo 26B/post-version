@@ -544,6 +544,8 @@ class Revision {
 
 	public function wp_restore_post_revision( $post_id, $revision_id ) : void {
 
+		// Restore revision meta.
+
 		// Core keys to keep in the original post.
 		$core_meta_keys = [
 			'full_meta_keys' => [
@@ -561,9 +563,14 @@ class Revision {
 			],
 		];
 
+		// TODO: Filter for meta_keys to ignore.
+
 		// Remove all of the non WordPress core meta entries.
 		$post_meta = get_post_meta( $post_id );
 		foreach ( array_keys( $post_meta ) as $meta_key ) {
+			if ( preg_match( '/post_version_([0-9]+)/', $meta_key ) ) {
+				continue;
+			}
 			if ( in_array( $meta_key, $core_meta_keys['full_meta_keys'], true ) ) {
 				continue;
 			}
@@ -578,12 +585,56 @@ class Revision {
 		// Copy every meta entry from $revision_id over to $post_id.
 		$revision_meta = get_post_meta( $revision_id );
 		foreach ( $revision_meta as $meta_key => $meta_values ) {
+			if ( preg_match( '/post_version_([0-9]+)/', $meta_key ) ) {
+				continue;
+			}
 			foreach ( $meta_values as $meta_value ) {
 				add_post_meta( $post_id, $meta_key, $meta_value );
 			}
 		}
 
 		// TODO: ACF will run after this so there might be issues.
+
+		// Restore revision terms.
+
+		$post_terms     = get_terms( [ 'object_ids' => $post_id ] );
+		$revision_terms = get_terms( [ 'object_ids' => $revision_id ] );
+		if ( $post_terms == $revision_terms ) {
+			return;
+		}
+
+		// TODO: filter for post terms
+		// TODO: filter for revision terms
+
+		// Index the terms for easier array_diff.
+
+		$indexed_post_terms = [];
+		foreach ( $post_terms as $post_term ) {
+			$indexed_post_terms[
+				sprintf( "%s-%s-%s", $post_term->term_id, $post_term->slug, $post_term->taxonomy )
+			] = $post_term;
+		}
+
+		$indexed_revision_terms = [];
+		foreach ( $revision_terms as $revision_term ) {
+			$indexed_revision_terms[
+				sprintf( "%s-%s-%s", $revision_term->term_id, $revision_term->slug, $revision_term->taxonomy )
+			] = $revision_term;
+		}
+
+		// Remove old terms and add new ones.
+
+		$diff_post_terms = array_diff_key( $indexed_post_terms, $indexed_revision_terms );
+		foreach ( $diff_post_terms as $post_term ) {
+			// TODO: failure state
+			wp_remove_object_terms( $post_id, $post_term->term_id, $post_term->taxonomy );
+		}
+
+		$diff_revision_terms = array_diff_key( $indexed_revision_terms, $indexed_post_terms );
+		foreach ( $diff_revision_terms as $revision_term ) {
+			// TODO: failure state
+			wp_add_object_terms( $post_id, $revision_term->term_id, $revision_term->taxonomy );
+		}
 	}
 
 	/**
