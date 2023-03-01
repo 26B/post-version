@@ -40,6 +40,6 @@ if ( ! defined( 'WPINC' ) ) {
  * @since 0.0.1
  */
 \add_action( 'plugins_loaded', function () {
-	$plugin = new TwentySixB\WP\Plugin\PostVersion\Plugin( 'post-version', '0.0.1' );
+	$plugin = new TwentySixB\WP\Plugin\PostVersion\Plugin( 'post-version', '0.0.3' );
 	$plugin->run();
 } );
